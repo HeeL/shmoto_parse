@@ -25,8 +25,16 @@ Here is an example of XML file on input:
 </items>
 ```
 
-The output will be an SQL file:
+The output will be SQL files:
+
+for new records:
 ```sql
 INSERT INTO products ( title, ext_id ) VALUES ( 'Hat', 123 ), 
 ( 'T-shirt', 456 )
+```
+
+for existing records: 
+```sql
+UPDATE products SET title = 'Hat' WHERE ext_id = 123 LIMIT 1; 
+UPDATE products SET title = 'T-shirt' WHERE ext_id = 456 LIMIT 1; 
 ```

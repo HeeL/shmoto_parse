@@ -1,34 +1,52 @@
 $:.push File.expand_path(File.dirname(__FILE__))
 
-require "xml_parser"
 require "nokogiri"
+require "xml_parser"
+require "json"
+require "json_parser"
 
 class Importer
-  include XmlParser
 
   def initialize(file_name)
     @file_name = file_name
+    case File.extname(file_name)
+    when '.json'
+      self.class.send(:include, JsonParser)
+    when '.xml'
+      self.class.send(:include, XmlParser)
+    else
+      raise 'Unknown format'
+    end
   end
 
   def create_sql
-    f = start_sql
-    parse_xml do |doc|
-      next unless doc.attributes['available'].to_s == 'true'
-      ext_id = doc.attributes['id']
-      title = doc.search('title').text
-      f.write "( '#{title}', #{ext_id} ), \n"
-      f.flush
+    f_ins, f_upd = start_sql
+    parse do |item|
+      next unless item[:available]
+      if item_exists?(item[:id])
+        f_upd.write("UPDATE products SET title = '#{item[:title]}' WHERE ext_id = #{item[:id]} LIMIT 1; \n");
+        f_upd.flush
+      else
+        f_ins.write "( '#{item[:title]}', #{item[:id]} ), \n"
+        f_ins.flush
+      end
     end
   end
 
   private
 
   def start_sql
-    f = File.open('products.sql', 'w')
-    f.write('INSERT INTO products ( title, ext_id ) VALUES ')
-    f
+    f_ins = File.open('insert_products.sql', 'w')
+    f_upd = File.open('update_products.sql', 'w')
+    f_ins.write('INSERT INTO products ( title, ext_id ) VALUES ')
+    return f_ins, f_upd
   end
 
+  def item_exists?(id)
+    # here you can implement a check whether an item is already in db
+    # example: Product.where(ext_id: id).first
+    true
+  end
 end
 importer = Importer.new('products.xml')
 importer.create_sql
