@@ -24,7 +24,7 @@ class Importer
     parse do |item|
       next unless item[:available]
       if item_exists?(item[:id])
-        f_upd.write("UPDATE products SET title = '#{item[:title]}' WHERE ext_id = #{item[:id]} LIMIT 1; \n");
+        f_upd.write("UPDATE products SET title = '#{item[:title]}', available = true WHERE ext_id = #{item[:id]} LIMIT 1; \n");
         f_upd.flush
       else
         f_ins.write "( '#{item[:title]}', #{item[:id]} ), \n"
